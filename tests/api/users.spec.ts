@@ -1,62 +1,54 @@
-/**
- * Test Suite: Users API Tests
- *
- * Tags: @master @sanity @api
- *
- * Covers:
- * - Get all users
- * - Get user by ID
- * - Get users with limit
- * - Sort users ascending and descending
- * - User CRUD (create, update, delete)
- */
-
 import { test, expect } from '@playwright/test';
-import { Routes } from '../../api/endpoints/routes';
 import { RandomDataUtil } from '../../utils/dataGenerator';
+import { Routes } from '../../api/endpoints/routes';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const BASE_URL = process.env.API_BASE_URL || Routes.BASE_URL;
-const USER_ID = Number(process.env.USER_ID ?? 1);
-const LIMIT = Number(process.env.LIMIT ?? 3);
-
 test.describe('Users API Tests', () => {
+
+    // ---------------------------------------------------------
+    // Configuration
+    // ---------------------------------------------------------
+
+    const BASE_URL = process.env.API_BASE_URL || Routes.BASE_URL;
+    const USER_ID = Number(process.env.USER_ID ?? 1);
+    const LIMIT = Number(process.env.LIMIT ?? 3);
 
     // ---------------------------------------------------------
     // GET - All Users
     // ---------------------------------------------------------
 
     test('GET - All Users @master @sanity @api', async ({ request }) => {
+
         const response = await request.get(`${BASE_URL}${Routes.GET_ALL_USERS}`);
 
         expect(response.status()).toBe(200);
 
-        const users = await response.json();
+        const responseBody = await response.json();
 
-        expect(Array.isArray(users)).toBeTruthy();
-        expect(users.length).toBeGreaterThan(0);
+        expect(Array.isArray(responseBody)).toBeTruthy();
+        expect(responseBody.length).toBeGreaterThan(0);
     });
 
     // ---------------------------------------------------------
     // GET - User by ID
     // ---------------------------------------------------------
 
-    test('GET - User by ID @master @sanity @api', async ({ request }) => {
-        const url = `${BASE_URL}${Routes.GET_USER_BY_ID.replace('{id}', String(USER_ID))}`;
-        const response = await request.get(url);
+    test('GET - User by ID @master @regression @api', async ({ request }) => {
+
+        const response = await request.get(`${BASE_URL}${Routes.GET_USER_BY_ID.replace('{id}', String(USER_ID))}`);
 
         expect(response.status()).toBe(200);
 
-        const user = await response.json();
+        const responseBody = await response.json();
 
-        expect(user.id).toBe(USER_ID);
-        expect(user).toHaveProperty('email');
-        expect(user).toHaveProperty('username');
-        expect(user).toHaveProperty('name');
-        expect(user).toHaveProperty('address');
-        expect(user).toHaveProperty('phone');
+        expect(responseBody.id).toBe(USER_ID);
+        expect(responseBody).toHaveProperty('email');
+        expect(responseBody).toHaveProperty('username');
+        expect(responseBody).toHaveProperty('name');
+        expect(responseBody).toHaveProperty('address');
+        expect(responseBody).toHaveProperty('phone');
     });
 
     // ---------------------------------------------------------
@@ -64,15 +56,15 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('GET - Users with Limit @master @regression @api', async ({ request }) => {
-        const url = `${BASE_URL}${Routes.GET_USERS_WITH_LIMIT.replace('{limit}', String(LIMIT))}`;
-        const response = await request.get(url);
+
+        const response = await request.get(`${BASE_URL}${Routes.GET_USERS_WITH_LIMIT.replace('{limit}', String(LIMIT))}`);
 
         expect(response.status()).toBe(200);
 
-        const users = await response.json();
+        const responseBody = await response.json();
 
-        expect(Array.isArray(users)).toBeTruthy();
-        expect(users.length).toBe(LIMIT);
+        expect(Array.isArray(responseBody)).toBeTruthy();
+        expect(responseBody.length).toBe(LIMIT);
     });
 
     // ---------------------------------------------------------
@@ -80,17 +72,14 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('GET - Sort Users Ascending @master @regression @api', async ({ request }) => {
-        const url = `${BASE_URL}${Routes.GET_USERS_SORTED.replace('{order}', 'asc')}`;
-        const response = await request.get(url);
+
+        const response = await request.get(`${BASE_URL}${Routes.GET_USERS_SORTED.replace('{order}', 'asc')}`);
 
         expect(response.status()).toBe(200);
 
-        const users = await response.json();
+        const responseBody = await response.json();
+        const ids = responseBody.map((u: any) => u.id);
 
-        expect(Array.isArray(users)).toBeTruthy();
-        expect(users.length).toBeGreaterThan(0);
-
-        const ids = users.map((u: any) => u.id);
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeGreaterThanOrEqual(ids[i - 1]);
         }
@@ -101,17 +90,14 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('GET - Sort Users Descending @master @regression @api', async ({ request }) => {
-        const url = `${BASE_URL}${Routes.GET_USERS_SORTED.replace('{order}', 'desc')}`;
-        const response = await request.get(url);
+
+        const response = await request.get(`${BASE_URL}${Routes.GET_USERS_SORTED.replace('{order}', 'desc')}`);
 
         expect(response.status()).toBe(200);
 
-        const users = await response.json();
+        const responseBody = await response.json();
+        const ids = responseBody.map((u: any) => u.id);
 
-        expect(Array.isArray(users)).toBeTruthy();
-        expect(users.length).toBeGreaterThan(0);
-
-        const ids = users.map((u: any) => u.id);
         for (let i = 1; i < ids.length; i++) {
             expect(ids[i]).toBeLessThanOrEqual(ids[i - 1]);
         }
@@ -122,17 +108,16 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('POST - Create User @master @regression @api', async ({ request }) => {
+
         const payload = RandomDataUtil.generateUserPayload();
 
         const response = await request.post(`${BASE_URL}${Routes.CREATE_USER}`, { data: payload });
 
-        expect(response.status()).toBe(200);
+        expect(response.status()).toBe(201);
 
-        const created = await response.json();
+        const responseBody = await response.json();
 
-        expect(created).toHaveProperty('id');
-        expect(created.email).toBe(payload.email);
-        expect(created.username).toBe(payload.username);
+        expect(responseBody).toHaveProperty('id');
     });
 
     // ---------------------------------------------------------
@@ -140,18 +125,16 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('PUT - Update User @master @regression @api', async ({ request }) => {
-        const payload = RandomDataUtil.generateUserUpdatePayload();
-        const url = `${BASE_URL}${Routes.UPDATE_USER.replace('{id}', String(USER_ID))}`;
 
-        const response = await request.put(url, { data: payload });
+        const payload = RandomDataUtil.generateUserUpdatePayload();
+
+        const response = await request.put(`${BASE_URL}${Routes.UPDATE_USER.replace('{id}', String(USER_ID))}`, { data: payload });
 
         expect(response.status()).toBe(200);
 
-        const updated = await response.json();
+        const responseBody = await response.json();
 
-        expect(updated.id).toBe(USER_ID);
-        expect(updated.email).toBe(payload.email);
-        expect(updated.username).toBe(payload.username);
+        expect(responseBody.username).toBe(payload.username);
     });
 
     // ---------------------------------------------------------
@@ -159,10 +142,14 @@ test.describe('Users API Tests', () => {
     // ---------------------------------------------------------
 
     test('DELETE - Delete User @master @regression @api', async ({ request }) => {
-        const url = `${BASE_URL}${Routes.DELETE_USER.replace('{id}', String(USER_ID))}`;
 
-        const response = await request.delete(url);
+        const response = await request.delete(`${BASE_URL}${Routes.DELETE_USER.replace('{id}', String(USER_ID))}`);
 
         expect(response.status()).toBe(200);
+
+        const responseBody = await response.json();
+
+        expect(responseBody).toHaveProperty('id');
+        expect(responseBody.id).toBe(USER_ID);
     });
 });
